@@ -84,7 +84,7 @@ const BookListItem: React.FC<BookListItemProps> = ({ book, onAddToCart }) => {
       <div className="flex items-center p-4 gap-4">
         {/* Book Cover/Icon - Left Side */}
         <Link href={`/book/${book.id}`} className="flex-shrink-0 cursor-pointer">
-          <div className="w-16 h-20 bg-gray-200 rounded-md flex items-center justify-center hover:bg-gray-300 transition-colors duration-200">
+          <div className="w-15 h-20 bg-gray-200 rounded-md flex items-center justify-center hover:bg-gray-300 transition-colors duration-200">
             <div className="text-2xl text-gray-400">📚</div>
           </div>
         </Link>
@@ -98,7 +98,7 @@ const BookListItem: React.FC<BookListItemProps> = ({ book, onAddToCart }) => {
                 <h3 className="text-lg font-semibold text-gray-800 truncate group-hover:text-blue-600 transition-colors duration-200">
                   {book.title}
                 </h3>
-                <p className="text-sm text-gray-600 mt-1">by {book.author}</p>
+                <p className="text-sm text-gray-400 mt-1">by {book.author}</p>
               </Link>
 
               {/* Rating and Reviews */}

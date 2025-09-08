@@ -283,7 +283,7 @@ const BookGrid: React.FC<BookGridProps> = ({ books, onAddToCart }) => {
         <h2 className="text-3xl font-bold text-gray-800 mb-6">All Books</h2>
         {filteredAndSortedBooks.length > 0 ? (
           <>
-            <div className="space-y-3">
+            <div className="space-y-3 md:space-y-0 md:grid md:grid-cols-2 lg:grid-cols-2 gap-2">
               {paginatedBooks.map(book => (
                 <BookListItem key={book.id} book={book} onAddToCart={onAddToCart} />
               ))}

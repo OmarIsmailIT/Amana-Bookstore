@@ -3,6 +3,25 @@ import { Book } from '../types';
 
 export const books: Book[] = [
   // Physics Textbooks
+    {
+    id: '46',
+    title: 'Full-stack',
+    author: 'Omar Ismail',
+    description: 'This is a test book',
+    price: 89.99,
+    image: '/images/book1.jpg',
+    isbn: '978-0123456789',
+    genre: ['Physics', 'Textbook'],
+    tags: ['Mechanics', 'Physics', 'University'],
+    datePublished: '2022-01-15',
+    pages: 654,
+    language: 'English',
+    publisher: 'Al-Biruni Academic Press',
+    rating: 4.8,
+    reviewCount: 23,
+    inStock: true,
+    featured: true,
+  },
   {
     id: '1',
     title: 'Fundamentals of Classical Mechanics',

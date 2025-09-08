@@ -37,16 +37,16 @@ const CartItem: React.FC<CartItemProps> = ({ item, onUpdateQuantity, onRemoveIte
           <button 
             onClick={() => onUpdateQuantity(book.id, quantity - 1)}
             disabled={quantity <= 1}
-            className="px-2 py-1 border rounded-md hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+            className="px-2 border rounded-r-full rounded-l-full hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
           >
-            -
+           <div className="w-2">-</div>
           </button>
           <span>{quantity}</span>
           <button 
             onClick={() => onUpdateQuantity(book.id, quantity + 1)}
-            className="px-2 py-1 border rounded-md hover:bg-gray-100 cursor-pointer"
+            className="px-2 border rounded-r-full rounded-l-full hover:bg-gray-100 cursor-pointer"
           >
-            +
+            <div className="w-2">+</div>
           </button>
         </div>
         <p className="text-md font-semibold w-20 text-right">${subtotal}</p>

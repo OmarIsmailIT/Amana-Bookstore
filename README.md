@@ -3,6 +3,7 @@
 Modern bookstore demo built with Next.js App Router, React, and Tailwind CSS. It showcases a catalog with filtering, featured carousel, book details with reviews, a simple cart (localStorage), and API route examples.
 
 ### Features
+
 - **Catalog UI**: Grid and list views with search, genre filter, sorting, and pagination
 - **Featured Carousel**: Simple paged carousel for highlighted books
 - **Book Details**: Ratings renderer, genres, price, and a reviews section
@@ -11,6 +12,7 @@ Modern bookstore demo built with Next.js App Router, React, and Tailwind CSS. It
 - **Responsive Design**: Tailwind CSS v4 styles
 
 ### Tech Stack
+
 - **Framework**: Next.js 15 App Router (`/src/app`)
 - **UI**: React 19 + Tailwind CSS v4
 - **Language**: TypeScript (strict mode)
@@ -19,24 +21,29 @@ Modern bookstore demo built with Next.js App Router, React, and Tailwind CSS. It
 
 ## Getting Started
 
-1) Install dependencies
+1. Install dependencies
+
 ```bash
 npm install
 ```
 
-2) Run the development server
+2. Run the development server
+
 ```bash
 npm run dev
 ```
+
 Visit `http://localhost:3000`.
 
-3) Build and start (production)
+3. Build and start (production)
+
 ```bash
 npm run build
 npm start
 ```
 
-4) Lint
+4. Lint
+
 ```bash
 npm run lint
 ```
@@ -75,6 +82,7 @@ Public images live under `public/images/` and are referenced by the seeded books
 ## API Overview
 
 - `GET /api/books`
+
   - Returns the full books array from `src/app/data/books.ts`.
 
 - `/api/cart` (demo only)

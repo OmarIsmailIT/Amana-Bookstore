@@ -9,37 +9,35 @@ import { CartItem } from '../types';
 
 const Navbar: React.FC = () => {
   const [cartItemCount, setCartItemCount] = useState(0);
+  const [loading, setLoading] = useState<boolean>(true);
   const pathname = usePathname();
 
-  useEffect(() => {
-    // This function updates the cart count from localStorage.
-    // It's designed to run on the client side only.
-    const updateCartCount = () => {
-      const storedCart = localStorage.getItem('cart');
-      if (storedCart) {
-        try {
-          const cart: CartItem[] = JSON.parse(storedCart);
-          const count = cart.reduce((total, item) => total + item.quantity, 0);
-          setCartItemCount(count);
-        } catch (error) {
-          console.error('Failed to parse cart from localStorage', error);
-          setCartItemCount(0);
-        }
-      } else {
+    async function fetchCartCount() {
+    try {
+      setLoading(true);
+      const res = await fetch('/api/cart');
+      if (!res.ok) {
+        console.error('Failed to fetch cart count', res.status);
         setCartItemCount(0);
+        return;
       }
-    };
+      const data = await res.json();
+      // data expected: array of cart items [{ id, bookId, quantity, ...}, ...]
+      const total = Array.isArray(data) ? data.reduce((sum: number, it: any) => sum + (Number(it.quantity) || 0), 0) : 0;
+      setCartItemCount(total);
+    } catch (err) {
+      console.error('Error fetching cart', err);
+      setCartItemCount(0);
+    } finally {
+      setLoading(false);
+    }
+  }
 
-    // Initial update
-    updateCartCount();
-
-    // Listen for custom event to update cart count
-    window.addEventListener('cartUpdated', updateCartCount);
-
-    // Clean up the event listener
-    return () => {
-      window.removeEventListener('cartUpdated', updateCartCount);
-    };
+  useEffect(() => {
+    fetchCartCount();
+    const handler = () => fetchCartCount();
+    window.addEventListener('cartUpdated', handler);
+    return () => window.removeEventListener('cartUpdated', handler);
   }, []);
   
   return (

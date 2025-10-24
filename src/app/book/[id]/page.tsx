@@ -4,9 +4,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { books } from '../../data/books';
-import { reviews } from '../../data/reviews';
-import { Book, CartItem, Review } from '../../types';
+import { Book, Review } from '../../types';
 
 export default function BookDetailPage() {
   const [book, setBook] = useState<Book | null>(null);
@@ -15,67 +13,71 @@ export default function BookDetailPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const params = useParams();
+  const params = useParams() as { id?: string | string[] | undefined };
   const router = useRouter();
-  const { id } = params;
+  const rawId = params?.id;
+  const id = Array.isArray(rawId) ? rawId[0] : (rawId ?? '');
 
   useEffect(() => {
-    if (id) {
-      const foundBook = books.find((b) => b.id === id);
-      if (foundBook) {
-        setBook(foundBook);
-        // Get reviews for this book
-        const bookReviewsData = reviews.filter((review) => review.bookId === id);
-        setBookReviews(bookReviewsData);
-      } else {
-        setError('Book not found.');
+    if (!id) return;
+    let mounted = true;
+
+    const fetchBookAndReviews = async () => {
+      try {
+        setIsLoading(true);
+        // fetch book by id
+        const bookRes = await fetch(`/api/books/${id}`);
+        if (!bookRes.ok) throw new Error(`Failed to fetch book (${bookRes.status})`);
+        const bookData = await bookRes.json();
+        // server returns { book } in route.ts — handle both shapes
+        const fetchedBook: Book = bookData?.book ?? bookData;
+
+        // fetch reviews for this book
+        const reviewsRes = await fetch(`/api/reviews?bookId=${encodeURIComponent(id)}`);
+        if (!reviewsRes.ok) throw new Error(`Failed to fetch reviews (${reviewsRes.status})`);
+        const reviewsData = await reviewsRes.json();
+
+        if (mounted) {
+          setBook(fetchedBook || null);
+          setBookReviews(Array.isArray(reviewsData) ? reviewsData : []);
+        }
+      } catch (err: any) {
+        console.error(err);
+        if (mounted) setError(err.message || 'Failed to load book');
+      } finally {
+        if (mounted) setIsLoading(false);
       }
-      setIsLoading(false);
-    }
-  }, [id]);
-
-  const handleAddToCart = () => {
-    if (!book) return;
-
-    const cartItem: CartItem = {
-      id: `${book.id}-${Date.now()}`,
-      bookId: book.id,
-      quantity: quantity,
-      addedAt: new Date().toISOString(),
     };
 
-    // Retrieve existing cart from localStorage
-    const storedCart = localStorage.getItem('cart');
-    const cart: CartItem[] = storedCart ? JSON.parse(storedCart) : [];
+    fetchBookAndReviews();
+    return () => { mounted = false; };
+  }, [id]);
 
-    // Check if the book is already in the cart
-    const existingItemIndex = cart.findIndex((item) => item.bookId === book.id);
-
-    if (existingItemIndex > -1) {
-      // Update quantity if item already exists
-      cart[existingItemIndex].quantity += quantity;
-    } else {
-      // Add new item to cart
-      cart.push(cartItem);
+  const handleAddToCart = async () => {
+    if (!book) return;
+    try {
+      const res = await fetch('/api/cart', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ bookId: book.id, quantity }),
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({ error: 'Unknown' }));
+        console.error('Add to cart failed', err);
+        return;
+      }
+      window.dispatchEvent(new CustomEvent('cartUpdated'));
+      router.push('/cart');
+    } catch (err) {
+      console.error('Add to cart error', err);
     }
-
-    // Save updated cart to localStorage
-    localStorage.setItem('cart', JSON.stringify(cart));
-
-    // Dispatch a custom event to notify the Navbar
-    window.dispatchEvent(new CustomEvent('cartUpdated'));
-
-    // Redirect to the cart page after adding
-    router.push('/cart');
   };
-  
-    const renderStars = (rating: number) => {
+
+  const renderStars = (rating: number) => {
     const stars = [];
     for (let i = 1; i <= 5; i++) {
       stars.push(
-        <span key={i} className={`text-yellow-400 ${i <= rating ? 'fill-current' : 'text-gray-300'}`}>
-          ★
-        </span>
+        <span key={i} className={`text-yellow-400 ${i <= rating ? 'fill-current' : 'text-gray-300'}`}>★</span>
       );
     }
     return stars;
@@ -83,46 +85,29 @@ export default function BookDetailPage() {
 
   const formatDate = (timestamp: string) => {
     const date = new Date(timestamp);
-    return date.toLocaleDateString('en-US', { 
-      year: 'numeric', 
-      month: 'long', 
-      day: 'numeric' 
-    });
+    return date.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
   };
 
-  if (isLoading) {
-    return <div className="text-center py-10">Loading...</div>;
-  }
-
-  if (error) {
-    return (
-      <div className="text-center py-10">
-        <h1 className="text-2xl font-bold text-red-500">{error}</h1>
-        <Link href="/" className="text-blue-500 hover:underline mt-4 inline-block">
-          Back to Home
-        </Link>
-      </div>
-    );
-  }
-
-  if (!book) {
-    return null; // Should be handled by error state
-  }
+  if (isLoading) return <div className="text-center py-10">Loading...</div>;
+  if (error) return (
+    <div className="text-center py-10">
+      <h1 className="text-2xl font-bold text-red-500">{error}</h1>
+      <Link href="/" className="text-blue-500 hover:underline mt-4 inline-block">Back to Home</Link>
+    </div>
+  );
+  if (!book) return <div className="text-center py-10">Book not found.</div>;
 
   return (
     <div className="container mx-auto px-4 py-8">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-        {/* Book Image */}
         <div className="relative h-96 md:h-[600px] w-full shadow-lg rounded-lg overflow-hidden bg-gray-200 flex items-center justify-center">
-          {/* Book Icon Placeholder */}
           <div className="text-8xl text-gray-400">📚</div>
         </div>
 
-        {/* Book Details */}
         <div className="flex flex-col justify-center">
           <h1 className="text-4xl font-extrabold text-gray-800 mb-2">{book.title}</h1>
           <p className="text-xl text-gray-600 mb-4">by {book.author}</p>
-          
+
           <div className="flex items-center mb-4">
             {renderStars(book.rating)}
             <span className="text-md text-gray-500 ml-2">({book.reviewCount} reviews)</span>
@@ -132,9 +117,7 @@ export default function BookDetailPage() {
 
           <div className="mb-4">
             {book.genre.map((g) => (
-              <span key={g} className="inline-block bg-gray-200 rounded-full px-3 py-1 text-sm font-semibold text-gray-700 mr-2 mb-2">
-                {g}
-              </span>
+              <span key={g} className="inline-block bg-gray-200 rounded-full px-3 py-1 text-sm font-semibold text-gray-700 mr-2 mb-2">{g}</span>
             ))}
           </div>
 
@@ -152,55 +135,40 @@ export default function BookDetailPage() {
             />
           </div>
 
-          <button 
-            onClick={handleAddToCart}
-            className="w-full bg-blue-500 text-white py-3 rounded-md hover:bg-blue-600 transition-colors duration-300 text-lg font-semibold"
-          >
+          <button onClick={handleAddToCart} className="w-full bg-blue-500 text-white py-3 rounded-md hover:bg-blue-600 transition-colors duration-300 text-lg font-semibold">
             Add to Cart
           </button>
 
-          <Link href="/" className="text-blue-500 hover:underline mt-6 text-center">
-            &larr; Back to Home
-          </Link>
+          <Link href="/" className="text-blue-500 hover:underline mt-6 text-center">&larr; Back to Home</Link>
         </div>
       </div>
 
-      {/* Reviews Section */}
       <div className="mt-12">
         <h2 className="text-2xl font-bold text-gray-800 mb-6">Customer Reviews</h2>
-        
+
         {bookReviews.length > 0 ? (
           <div className="space-y-6">
             {bookReviews.map((review) => (
               <div key={review.id} className="bg-white p-6 rounded-lg shadow-md border border-gray-200">
                 <div className="flex items-start justify-between mb-3">
                   <div className="flex items-center space-x-3">
-                    <div className="flex items-center">
-                      {renderStars(review.rating)}
-                    </div>
+                    <div className="flex items-center">{renderStars(review.rating)}</div>
                     <span className="text-sm text-gray-500">•</span>
                     <span className="text-sm text-gray-600">{formatDate(review.timestamp)}</span>
                     {review.verified && (
                       <>
                         <span className="text-sm text-gray-500">•</span>
-                        <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded-full">
-                          Verified Purchase
-                        </span>
+                        <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded-full">Verified Purchase</span>
                       </>
                     )}
                   </div>
                 </div>
-                
+
                 <h3 className="text-lg font-semibold text-gray-800 mb-2">{review.title}</h3>
                 <p className="text-gray-700 mb-3 leading-relaxed">{review.comment}</p>
-                
+
                 <div className="flex items-center justify-between">
                   <span className="text-sm font-medium text-gray-600">by {review.author}</span>
-                  <div className="flex items-center space-x-2 text-xs text-gray-500">
-                    <button className="hover:text-blue-500">Helpful</button>
-                    <span>•</span>
-                    <button className="hover:text-blue-500">Report</button>
-                  </div>
                 </div>
               </div>
             ))}
